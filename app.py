@@ -22,28 +22,76 @@ option = st.sidebar.selectbox("Choose Agent", [
     "GitHub Repo Assistant"
 ])
 
+import os
+import tempfile
+import pandas as pd
+import fitz  # PyMuPDF
+import docx2txt
+import json
+import pptx
+import openpyxl
+from bs4 import BeautifulSoup
+import ebooklib
+from ebooklib import epub
+
 # --- Multi-Doc QA Agent ---
 if option == "Multi-Doc QA Bot with RAG":
     st.subheader("📄 Multi-Document QA with RAG")
-    uploaded_files = st.file_uploader("Upload multiple documents", accept_multiple_files=True, type=["pdf", "txt", "docx"])
+    uploaded_files = st.file_uploader(
+        "Upload multiple documents",
+        accept_multiple_files=True,
+        type=["pdf", "txt", "docx", "csv", "json", "md", "pptx", "xlsx", "html", "epub"]
+    )
     question = st.text_input("Ask a question about the documents")
 
     if st.button("Get Answer") and uploaded_files and question:
         combined_text = ""
         for file in uploaded_files:
-            if file.name.endswith(".txt"):
+            filename = file.name.lower()
+            if filename.endswith(".txt") or filename.endswith(".md"):
                 combined_text += file.read().decode("utf-8") + "\n"
-            elif file.name.endswith(".pdf"):
-                import fitz  # PyMuPDF
+
+            elif filename.endswith(".pdf"):
                 with fitz.open(stream=file.read(), filetype="pdf") as doc:
                     for page in doc:
                         combined_text += page.get_text()
-            elif file.name.endswith(".docx"):
-                import docx2txt
+
+            elif filename.endswith(".docx"):
                 temp_path = os.path.join(tempfile.gettempdir(), file.name)
                 with open(temp_path, "wb") as f:
                     f.write(file.read())
                 combined_text += docx2txt.process(temp_path)
+
+            elif filename.endswith(".csv"):
+                df = pd.read_csv(file)
+                combined_text += df.to_string(index=False)
+
+            elif filename.endswith(".json"):
+                data = json.load(file)
+                combined_text += json.dumps(data, indent=2)
+
+            elif filename.endswith(".pptx"):
+                prs = pptx.Presentation(file)
+                for slide in prs.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, "text"):
+                            combined_text += shape.text + "\n"
+
+            elif filename.endswith(".xlsx"):
+                df = pd.read_excel(file, sheet_name=None)
+                for name, sheet in df.items():
+                    combined_text += f"\nSheet: {name}\n" + sheet.to_string(index=False)
+
+            elif filename.endswith(".html"):
+                soup = BeautifulSoup(file.read(), "html.parser")
+                combined_text += soup.get_text()
+
+            elif filename.endswith(".epub"):
+                book = epub.read_epub(file)
+                for item in book.get_items():
+                    if item.get_type() == ebooklib.ITEM_DOCUMENT:
+                        soup = BeautifulSoup(item.get_content(), "html.parser")
+                        combined_text += soup.get_text()
 
         prompt = f"""You are an AI assistant. Use the context below to answer the question:
 
@@ -54,6 +102,7 @@ Question: {question}
 """
         response = model.generate_content(prompt)
         st.write(response.text)
+
 
 # --- Website Chat Agent ---
 elif option == "Website Chat Agent (RAG from URL)":
