@@ -7,3 +7,4 @@ PyMuPDF
 docx2txt
 langchain
 openai
+google-generativeai
