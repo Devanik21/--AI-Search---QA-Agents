@@ -14,7 +14,7 @@ model = genai.GenerativeModel("gemini-2.0-flash")
 
 st.set_page_config(page_title="AI Search + QA Agents", layout="wide",page_icon="🔎")
 st.title("🔎 Search + QA Agents")
-st.markdown("Effortlessly query documents, websites, or GitHub repos with Gemini + RAG 🧠")
+st.markdown("Effortlessly query documents, websites, or GitHub repos with Gemini + RAG ")
 
 option = st.sidebar.selectbox("Choose Agent", [
     "Multi-Doc QA Bot with RAG",
