@@ -219,11 +219,7 @@ Knowledge graph integration
 
 ---
 
-# Repository
 
-[https://github.com/Devanik21](https://github.com/Devanik21)
-
----
 
 # License
 
