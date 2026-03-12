@@ -1,6 +1,7 @@
 # AI Search + QA Agents
 
 **Author:** Devanik
+
 **GitHub:** [https://github.com/Devanik21](https://github.com/Devanik21)
 
 ## Overview
