@@ -1,91 +1,231 @@
-# 🎨 Generative Adversarial Networks: A Mathematical & Technical Deep-Dive
+# AI Search + QA Agents
 
-Welcome to the official documentation for this **Generative Adversarial Network (GAN) Training Framework**. This repository serves as a rigorous implementation and exploration of adversarial learning, specifically focusing on the evolution from the original Minimax GAN to the more stable Wasserstein GAN with Gradient Penalty (WGAN-GP).
+**Author:** Devanik
+**GitHub:** [https://github.com/Devanik21](https://github.com/Devanik21)
 
----
+## Overview
 
-## 🏗️ Theoretical Foundation
+AI Search + QA Agents is a unified retrieval‑augmented reasoning system that enables semantic querying across heterogeneous information sources including documents, websites, and GitHub repositories.
 
-### 1. The Adversarial Objective (Minimax Game)
-The fundamental concept of a GAN involves two neural networks, the **Generator ($G$)** and the **Discriminator ($D$)**, engaged in a zero-sum game. The Generator seeks to map a latent noise distribution $p_z(z)$ to the data distribution $p_{data}$, while the Discriminator attempts to distinguish between real samples $x$ and generated samples $G(z)$.
+The system integrates large language models with structured information retrieval pipelines to produce context‑aware answers. The architecture follows a simplified Retrieval Augmented Generation (RAG) paradigm:
 
-The objective function is defined by the following minimax expression:
-$$\min_G \max_D V(D, G) = \mathbb{E}_{x \sim p_{data}(x)}[\log D(x)] + \mathbb{E}_{z \sim p_z(z)}[\log(1 - D(G(z)))]$$
+1. Data ingestion
+2. Context extraction
+3. Prompt construction
+4. Generative inference
 
-In practice, the Discriminator is trained to maximize this value, providing a gradient to the Generator, which is simultaneously trained to minimize it.
-
-### 2. The Wasserstein Metric and Earth-Mover Distance
-To mitigate the issues of vanishing gradients and mode collapse associated with the Jensen-Shannon divergence (which the original GAN optimizes), we employ the **Wasserstein-1 distance** (also known as the Earth-Mover distance):
-
-$$W(P_r, P_g) = \inf_{\gamma \in \Pi(P_r, P_g)} \mathbb{E}_{(x, y) \sim \gamma}[\|x - y\|]$$
-
-Through the Kantorovich-Rubinstein duality, this is simplified for neural network optimization as:
-$$W(P_r, P_g) = \sup_{\|f\|_L \le 1} \mathbb{E}_{x \sim P_r}[f(x)] - \mathbb{E}_{x \sim P_g}[f(x)]$$
-
-Where the function $f$ (parameterized by the Discriminator/Critic) must satisfy the **1-Lipschitz continuity** constraint:
-$$|f(x_1) - f(x_2)| \le |x_1 - x_2|$$
-
-### 3. Stabilizing via Gradient Penalty (WGAN-GP)
-Enforcing the Lipschitz constraint via weight clipping (as in the original WGAN) can lead to capacity underutilization and optimization difficulties. This implementation utilizes the **Gradient Penalty** method to enforce the constraint softly:
-
-$$L = \underbrace{\mathbb{E}_{\tilde{x} \sim P_g}[D(\tilde{x})] - \mathbb{E}_{x \sim P_r}[D(x)]}_{\text{Critic Loss}} + \underbrace{\lambda \mathbb{E}_{\hat{x} \sim P_{\hat{x}}}[(\|\nabla_{\hat{x}} D(\hat{x})\|_2 - 1)^2]}_{\text{Gradient Penalty Term}}$$
-
-Here, $\hat{x}$ is sampled by interpolating between real and fake data points. The penalty term encourages the norm of the gradient to stay close to 1, satisfying the Lipschitz condition.
+This repository demonstrates a lightweight yet extensible implementation using **Streamlit + Gemini API**.
 
 ---
 
-## 🔬 Technical Deep-Dive
+# System Architecture
 
-### Architectural Paradigms
-- **Simple GAN**: A baseline multi-layer perceptron (MLP) architecture used for lower-dimensional data manifolds.
-- **Deep Convolutional GAN (DCGAN)**: A more sophisticated architecture employing strided convolutions (for downsampling in $D$) and fractional-strided convolutions (for upsampling in $G$), along with Batch Normalization to stabilize the internal covariate shift.
+The application is organized into three primary intelligent agents:
 
-### Optimizer Dynamics
-Adversarial training is inherently unstable due to the non-stationary nature of the objective for each network. We utilize the **Adam optimizer** with a lower momentum term ($\beta_1 = 0.5$) to prevent overshooting the oscillating equilibrium. For WGAN-GP, we typically favor the **RMSProp** or Adam without momentum to ensure more stable convergence of the Critic.
+• Multi‑Document QA Agent
+• Website QA Agent
+• GitHub Repository Assistant
 
-### Quality Assessment: FID
-To quantitatively evaluate the generative performance, we utilize the **Fréchet Inception Distance (FID)**. FID measures the distance between the feature distributions of real and generated images in the latent space of a pre-trained Inception-v3 network:
-$$d^2((m_r, C_r), (m_g, C_g)) = \|m_r - m_g\|^2_2 + \text{Tr}(C_r + C_g - 2\sqrt{C_r C_g})$$
-Lower FID scores correspond to higher visual fidelity and greater diversity in the generated samples.
+Each module implements a variant of a context retrieval pipeline.
 
----
+Let
 
-## 🚀 Getting Started
+D = {d1, d2, ... dn}
 
-### Prerequisites
-Ensure your environment meets the following requirements:
-- **Python**: 3.9 or higher
-- **Deep Learning Framework**: PyTorch or TensorFlow (depending on the specific model implementation)
-- **Dashboard**: Streamlit
+represent a corpus of documents.
 
-### Installation & Execution
+A query q is processed through a function
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Devanik21/--AI-Search---QA-Agents.git
-   cd --AI-Search---QA-Agents
-   ```
+A(q) = M(q, R(D))
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+where
 
-3. **Run the Streamlit Interface**:
-   ```bash
-   streamlit run app.py
-   ```
+R(D) = retrieval function extracting relevant textual context
+
+M = generative model mapping context to an answer.
 
 ---
 
-## 🤝 Acknowledgments
-This implementation is built upon the foundational work of Goodfellow et al. (2014), Radford et al. (2015), and Gulrajani et al. (2017). We extend our gratitude to the open-source community for providing the tools and theoretical frameworks that make this research possible.
+# Retrieval Augmented Generation Formulation
+
+The answer generation process follows
+
+P(a | q, C) = LM(q ⊕ C)
+
+where
+
+q = user query
+C = contextual text extracted from sources
+LM = large language model
+
+The concatenation operator ⊕ merges query and context.
 
 ---
 
-## 📜 License
-Distributed under the MIT License. See `LICENSE` for more information.
+# Agent 1 — Multi‑Document QA Bot
+
+This module enables question answering across multiple uploaded documents.
+
+Supported formats include:
+
+PDF
+TXT
+DOCX
+CSV
+JSON
+Markdown
+PPTX
+XLSX
+HTML
+EPUB
+
+## Document Processing Pipeline
+
+Each document type requires a specialized parser.
+
+For example:
+
+PDF extraction uses PyMuPDF
+DOCX uses docx2txt
+CSV/XLSX uses pandas
+HTML uses BeautifulSoup
+EPUB uses ebooklib
+
+The system converts each document into a unified text representation
+
+T = Σ Ti
+
+where Ti represents text extracted from document i.
+
+This combined representation is used as contextual input for the LLM.
 
 ---
 
-*“Mathematics is the language in which God has written the universe.”* — Galileo Galilei. We hope this documentation provides a clear and rigorous bridge between theory and practice.
+# Agent 2 — Website QA Agent
+
+The Website Agent performs dynamic retrieval from a provided URL.
+
+Pipeline:
+
+1. HTTP request to fetch page
+2. HTML parsing using BeautifulSoup
+3. Removal of markup
+4. Extraction of semantic text
+
+Let
+
+W = webpage content
+
+Then
+
+C = clean(W)
+
+The generative model receives
+
+LM(q ⊕ C)
+
+---
+
+# Agent 3 — GitHub Repository Assistant
+
+The GitHub assistant clones repositories and performs semantic code inspection.
+
+Pipeline:
+
+1. Repository cloning
+2. Recursive file traversal
+3. Code aggregation
+
+Let
+
+S = set of source files
+
+S = {s1, s2, ... sn}
+
+The system constructs
+
+C = Σ text(si)
+
+Limited to the first 20000 characters to maintain inference efficiency.
+
+The resulting context is used to generate explanations of the codebase.
+
+---
+
+# Mathematical Interpretation of Context Fusion
+
+Let
+
+Ci be contextual segments extracted from each source.
+
+The aggregated context becomes
+
+C_total = ⋃ Ci
+
+The LLM performs inference
+
+argmax_a P(a | q, C_total)
+
+where a is the generated answer.
+
+---
+
+# Implementation Details
+
+Language: Python
+Framework: Streamlit
+Model: Gemini 2.0 Flash
+
+Core Libraries
+
+streamlit
+PyMuPDF
+pandas
+docx2txt
+BeautifulSoup
+ebooklib
+python-pptx
+openpyxl
+GitPython
+
+---
+
+# Performance Considerations
+
+The system limits context length to reduce computational overhead.
+
+Let
+
+L_max = model context window
+
+Then
+
+|C| ≤ L_max
+
+This constraint ensures stable inference latency.
+
+---
+
+# Future Extensions
+
+Potential improvements include:
+
+Vector embeddings
+Semantic chunking
+Approximate nearest neighbor retrieval
+Hybrid search architectures
+Knowledge graph integration
+
+---
+
+# Repository
+
+[https://github.com/Devanik21](https://github.com/Devanik21)
+
+---
+
+# License
+
+This project is released without copyright restrictions.
+
+Created March 2026 by Devanik.
